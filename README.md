@@ -21,18 +21,20 @@ Dominos/
 │ └── obj/
 ```
 ---
-##How to Run
-Clone the Repository:
-
+## How to Run
+- Clone the Repository:
+```
 git clone https://github.com/daminibhattacharya/dominos.git
-cd HelloDominos
-
-Build the Project:
-
+cd dominos
+```
+- Build the Project:
+```
 dotnet build
+```
 Run the Program:
-
+```
 dotnet run
+```
 ---
 ## Input Format
 
