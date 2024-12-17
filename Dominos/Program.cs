@@ -50,26 +50,35 @@ public class HelloDomino
             }
             else
             {
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 //condition 1: Every node has an even degree
-                bool isValidDomino = validateEvenDegrees(dominos);
-                if (isValidDomino)
+                var cycle = graphBasedDFSApproach(dominos);
+                if (cycle == null)
                 {
-                    //condition 2: Every node is connected to one single cycle
-                    var cycle = verifyEulerianCycle(dominos);
-                    if (cycle == null)
-                    {
-                        Console.WriteLine("Domino Circle is not possible for the given input.");
-                    }
-                    else
-                    {
-                        var pairs = createDominoPairs(cycle);
-                        printPairs(pairs);
-                    }
-
+                    Console.WriteLine("Domino Circle is not possible for the given input.");
+                }
+                else
+                {
+                    var pairs = createDominoPairs(cycle);
+                    printPairs(pairs);
+                    double elapsedSeconds = stopwatch.ElapsedMilliseconds / 1000.0;
+                    Console.WriteLine($"Elapsed time: {elapsedSeconds} seconds");
                 }
             }
         }
 
+    }
+
+    public static List<int> graphBasedDFSApproach(Dictionary<int, List<int>> dominos)
+    {
+        bool isValidDomino = validateEvenDegrees(dominos);
+        if (isValidDomino)
+        {
+            //condition 2: Every node is connected to one single cycle
+            return verifyEulerianCycle(dominos);
+        }else{
+            return null;
+        }
     }
 
     private static int[,] createDominoPairs(List<int> eulerianCycle)
@@ -92,7 +101,7 @@ public class HelloDomino
             if (domino.Value.Count % 2 != 0)
             {
                 isValidDomino = false;
-                Console.WriteLine("Domino Circle is not possible for the given input.");
+                Console.WriteLine("Even degree validation failed.");
                 break;
             }
         }
@@ -208,39 +217,54 @@ public class HelloDomino
             }
             else
             {
-                Dictionary<int, int> frequencyDict = new Dictionary<int, int>();
-
-                for (var i = 0; i < dominos.GetLength(0); i++)
-                {
-                    if (!frequencyDict.ContainsKey(dominos[i, 0]))
-                    {
-                        frequencyDict[dominos[i, 0]] = 0;
-                    }
-                    if (!frequencyDict.ContainsKey(dominos[i, 1]))
-                    {
-                        frequencyDict[dominos[i, 1]] = 0;
-                    }
-                    frequencyDict[dominos[i, 0]]++;
-                    frequencyDict[dominos[i, 1]]++;
-                }
-                bool isValidDomino = true;
-                foreach (var key in frequencyDict)
-                {
-                    if (key.Value % 2 != 0)
-                    {
-                        isValidDomino = false;
-                        Console.WriteLine("Domino Circle is not possible for the given input.");
-                        break;
-                    }
-                }
-                if (isValidDomino)
-                {
-                    dominos = bruteForceApproach(dominos);
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                dominos = dictionaryBasedApproach(dominos);
+                if(dominos!=null){
                     printPairs(dominos);
+                    double elapsedSeconds = stopwatch.ElapsedMilliseconds / 1000.0;
+                    Console.WriteLine($"Elapsed time: {elapsedSeconds} seconds");
                 }
+                
             }
         }
 
+    }
+
+    public static int[,] dictionaryBasedApproach(int[,] dominos)
+    {
+        bool isValidDomino = true;
+
+        Dictionary<int, int> frequencyDict = new Dictionary<int, int>();
+
+        for (var i = 0; i < dominos.GetLength(0); i++)
+        {
+            if (!frequencyDict.ContainsKey(dominos[i, 0]))
+            {
+                frequencyDict[dominos[i, 0]] = 0;
+            }
+            if (!frequencyDict.ContainsKey(dominos[i, 1]))
+            {
+                frequencyDict[dominos[i, 1]] = 0;
+            }
+            frequencyDict[dominos[i, 0]]++;
+            frequencyDict[dominos[i, 1]]++;
+        }
+
+        foreach (var key in frequencyDict)
+        {
+            if (key.Value % 2 != 0)
+            {
+                isValidDomino = false;
+                Console.WriteLine("Domino Circle is not possible for the given input.");
+                return null;
+            }
+        }
+        if (isValidDomino)
+        {
+            dominos = bruteForceApproach(dominos);
+        }
+
+        return dominos;
     }
 
     private static void solveByBruteForce()
@@ -256,6 +280,7 @@ public class HelloDomino
             }
             else
             {
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 dominos = bruteForceApproach(dominos);
                 if (dominos == null)
                 {
@@ -263,11 +288,12 @@ public class HelloDomino
                 }
                 else
                 {
+                    double elapsedSeconds = stopwatch.ElapsedMilliseconds / 1000.0;
                     printPairs(dominos);
+                    Console.WriteLine($"Elapsed time: {elapsedSeconds} seconds");
                 }
             }
         }
-
     }
 
     private static string getInput()
@@ -286,34 +312,55 @@ public class HelloDomino
 
     }
 
-    private static int[,] bruteForceApproach(int[,] pairs)
+    public static int[,] bruteForceApproach(int[,] pairs)
     {
         if (pairs == null || pairs.GetLength(0) == 0 || pairs.GetLength(0) == 1)
         {
             return null;
         }
 
-        for (var i = 0; i < pairs.GetLength(0) - 1; i++)
-        {
-            int current = i;
-            int next = i + 1;
-            bool hasMatch = false;
-            for (var j = i + 1; j < pairs.GetLength(0); j++)
+        
+        int startingNode = 0;
+        var validCycle = true;
+        for(;startingNode<pairs.GetLength(0)-1;)
+        {   
+            
+            var chain = pairs;
+            for (var i = 0; i < chain.GetLength(0) - 1; i++)
             {
-                //checking if current element matches either first or second element of next Domino
-                hasMatch = findMatch(pairs, current, next, j);
-                if (hasMatch)
+                int current = i;
+                int next = i + 1;
+                bool hasMatch = false;
+                for (var j = i + 1; j < chain.GetLength(0); j++)
                 {
+                    //checking if current element matches either first or second element of next Domino
+                    hasMatch = findMatch(chain, current, next, j);
+                    if (hasMatch)
+                    {
+                        validCycle = true;
+                        break;
+                    }
+
+                }
+                if (!hasMatch)
+                {
+                    validCycle = false;
                     break;
                 }
-
             }
-            if (!hasMatch)
-            {
-                return null;
+            if(!validCycle){
+                swapPairs(pairs,startingNode,startingNode+1);
+                startingNode++;
+            }else{
+                break; 
             }
         }
-        return pairs;
+        if(validCycle){
+            return pairs;
+        }else{
+            return null;
+        }
+        
     }
 
     private static bool findMatch(int[,] pairs, int current, int next, int j)
@@ -342,14 +389,14 @@ public class HelloDomino
         return hasMatch;
     }
 
-    private static void swapPairs(int[,] pairs, int next, int j)
+    private static void swapPairs(int[,] pairs, int current, int next)
     {
-        var tempFirst = pairs[j, 0];
-        var tempSecond = pairs[j, 1];
-        pairs[j, 0] = pairs[next, 0];
-        pairs[j, 1] = pairs[next, 1];
-        pairs[next, 0] = tempFirst;
-        pairs[next, 1] = tempSecond;
+        var tempFirst = pairs[next, 0];
+        var tempSecond = pairs[next, 1];
+        pairs[next, 0] = pairs[current, 0];
+        pairs[next, 1] = pairs[current, 1];
+        pairs[current, 0] = tempFirst;
+        pairs[current, 1] = tempSecond;
     }
 
     private static void flipPairs(int[,] pairs, int j)
